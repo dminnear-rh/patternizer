@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/dminnear-rh/patternizer/internal/fileutils"
 	"github.com/dminnear-rh/patternizer/internal/types"
 )
 
@@ -24,35 +24,6 @@ func GetPatternNameAndRepoRoot() (patternName, repoRoot string, err error) {
 	// Use the basename as the pattern name
 	patternName = filepath.Base(repoRoot)
 	return patternName, repoRoot, nil
-}
-
-// extractPatternNameFromURL extracts the pattern name from a Git repository URL.
-// Returns an error if the URL format is not recognized.
-func extractPatternNameFromURL(url string) (string, error) {
-	// Handle SSH URLs: git@github.com:user/repo.git
-	if strings.HasPrefix(url, "git@") {
-		parts := strings.Split(url, ":")
-		if len(parts) >= 2 {
-			repoPath := parts[1]
-			repoName := filepath.Base(repoPath)
-			return strings.TrimSuffix(repoName, ".git"), nil
-		}
-		return "", fmt.Errorf("invalid SSH URL format")
-	}
-
-	// Handle HTTPS URLs: https://github.com/user/repo.git
-	if strings.HasPrefix(url, "https://") {
-		repoName := filepath.Base(url)
-		return strings.TrimSuffix(repoName, ".git"), nil
-	}
-
-	// Handle HTTP URLs: http://github.com/user/repo.git
-	if strings.HasPrefix(url, "http://") {
-		repoName := filepath.Base(url)
-		return strings.TrimSuffix(repoName, ".git"), nil
-	}
-
-	return "", fmt.Errorf("unsupported URL format: expected git@host:user/repo.git, https://host/user/repo.git, or http://host/user/repo.git")
 }
 
 // ProcessGlobalValues processes the global values YAML file.
@@ -84,12 +55,8 @@ func ProcessGlobalValues(patternName, repoRoot string, withSecrets bool) (actual
 	// If withSecrets is false, we want secretLoader to be disabled (disabled = true)
 	values.Global.SecretLoader.Disabled = !withSecrets
 
-	// Write back the merged values
-	finalYamlBytes, err := yaml.Marshal(values)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to marshal global values: %w", err)
-	}
-	if err = os.WriteFile(globalValuesPath, finalYamlBytes, 0o644); err != nil {
+	// Write back the merged values with 2-space indentation
+	if err = fileutils.WriteYAMLWithIndent(values, globalValuesPath); err != nil {
 		return "", "", fmt.Errorf("failed to write to %s: %w", globalValuesPath, err)
 	}
 
@@ -118,12 +85,8 @@ func ProcessClusterGroupValues(patternName, clusterGroupName, repoRoot string, c
 		mergeClusterGroupValues(values, &existingValues)
 	}
 
-	// Write back the merged values
-	finalYamlBytes, err := yaml.Marshal(values)
-	if err != nil {
-		return fmt.Errorf("failed to marshal cluster group values: %w", err)
-	}
-	if err = os.WriteFile(clusterGroupValuesPath, finalYamlBytes, 0o644); err != nil {
+	// Write back the merged values with 2-space indentation
+	if err = fileutils.WriteYAMLWithIndent(values, clusterGroupValuesPath); err != nil {
 		return fmt.Errorf("failed to write to %s: %w", clusterGroupValuesPath, err)
 	}
 
