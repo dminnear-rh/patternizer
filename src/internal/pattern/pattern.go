@@ -7,8 +7,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/dminnear-rh/patternizer/internal/fileutils"
-	"github.com/dminnear-rh/patternizer/internal/types"
+	"github.com/validatedpatterns/patternizer/internal/fileutils"
+	"github.com/validatedpatterns/patternizer/internal/types"
 )
 
 // GetPatternNameAndRepoRoot returns the pattern name and repository root directory.
@@ -140,11 +140,6 @@ func mergeClusterGroupValues(defaults, existing *types.ValuesClusterGroup) {
 	}
 
 	defaults.ClusterGroup.Projects = mergedProjects
-
-	// Preserve other fields from existing
-	if existing.ClusterGroup.IsHubCluster {
-		defaults.ClusterGroup.IsHubCluster = existing.ClusterGroup.IsHubCluster
-	}
 
 	// Merge subscriptions
 	for key, sub := range existing.ClusterGroup.Subscriptions {
